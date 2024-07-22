@@ -1,0 +1,4 @@
+testing:
+  api_endpoint: http://127.0.0.1:8000
+  auth_token_id: 41e1e1df-8794-4ca5-a88d-54a2972150f2
+  auth_token_secret: IXBpSPDRM4ljHT20vNTFz8ToJkcY8Xsc73GQH5ioL3V0JwR7FWTv4jijndaGwolF
