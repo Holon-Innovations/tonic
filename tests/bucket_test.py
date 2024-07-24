@@ -81,7 +81,7 @@ def test_delete_bucket_doesnt_exist(tonic):
 def test_delete_bucket_locked(tonic):
     # create bucket using a random name
     bucket_name = "test-bucket-" + str(random.randint(1000, 9999))
-    res = tonic.create_bucket(bucket_name=bucket_name, bucket_locked=True)
+    res = tonic.create_bucket(bucket=bucket_name, bucket_locked=True)
     assert res is not None
     # delete bucket
     try:

@@ -71,10 +71,10 @@ class Tonic:
             raise PopBadResponse(response)
         return response
 
-    def create_bucket(self, bucket_name: str, acl: BUCKET_ACL = BUCKET_ACL.PRIVATE, bucket_locked: bool = False) -> json:
+    def create_bucket(self, bucket: str, acl: BUCKET_ACL = BUCKET_ACL.PRIVATE, bucket_locked: bool = False) -> json:
         response = self.__get_response(
             method="POST",
-            url=f"/buckets/create-bucket/{bucket_name}",
+            url=f"/buckets/create-bucket/{bucket}",
             json={"acl": acl.value, "locked": bucket_locked}
             )
         return response.json()
@@ -90,16 +90,16 @@ class Tonic:
             result.append(Bucket(name=bucket["name"], creation_date=bucket["created"]))
         return result
 
-    def delete_bucket(self, bucket_name: str) -> json:
+    def delete_bucket(self, bucket: str) -> json:
         response = self.__get_response(
             method="DELETE",
-            url=f"/buckets/delete-bucket/{bucket_name}"
+            url=f"/buckets/delete-bucket/{bucket}"
             )
         return response.json()
 
     def __put_object_multipart(self,
-        bucket_name: str,
-        object_name: str,
+        bucket: str,
+        key: str,
         data: BinaryIO,
         length: int,
         content_type: str = "application/octet-stream",
@@ -115,7 +115,7 @@ class Tonic:
         # create the multipart object
         response = self.__get_response(
             method="POST",
-            url=f"/objects/create-multipart-object/{bucket_name}/{object_name}",
+            url=f"/objects/create-multipart-object/{bucket}/{key}",
             json={"part_count": part_count, "object_size": length, "content_type": content_type}
         )
         upload_id = response.json()["upload_id"]
@@ -138,7 +138,7 @@ class Tonic:
         if verify_sha256:
             response = self.__get_response(
                 method="GET",
-                url=f"/objects/get-object-checksum/sha256/{bucket_name}/{object_name}"
+                url=f"/objects/get-object-checksum/sha256/{bucket}/{key}"
                 )
             sha256 = response.json()["checksum"]
         else:
@@ -149,8 +149,8 @@ class Tonic:
         }
 
     def put_object(self,
-        bucket_name: str,
-        object_name: str,
+        bucket: str,
+        key: str,
         file: any = str | BinaryIO,
         content_type: str = "application/octet-stream",
         verify_sha256: bool = False
@@ -175,8 +175,8 @@ class Tonic:
             # open the file and upload it
             with open(file_path, "rb") as file_data:
                 result = self.__put_object_multipart(
-                    bucket_name=bucket_name,
-                    object_name=object_name,
+                    bucket=bucket,
+                    key=key,
                     data=file_data,
                     length=file_size,
                     content_type=content_type,
@@ -190,8 +190,8 @@ class Tonic:
 
             # upload the file
             result = self.__put_object_multipart(
-                bucket_name=bucket_name,
-                object_name=object_name,
+                bucket=bucket,
+                key=key,
                 data=file_data,
                 length=file_size,
                 content_type=content_type,
@@ -202,10 +202,10 @@ class Tonic:
 
         return result
 
-    def list_objects(self, bucket_name: str) -> list[Object]:
+    def list_objects(self, bucket: str) -> list[Object]:
         response = self.__get_response(
             method="GET",
-            url=f"/objects/list-objects/{bucket_name}"
+            url=f"/objects/list-objects/{bucket}"
             )
         res = response.json()
         result = []
@@ -213,9 +213,21 @@ class Tonic:
             result.append(Object(name=obj["name"], creation_date=obj["created"]))
         return result
 
-    def get_object_checksum(self, bucket_name: str, object_name: str, algorithm: OBJECT_CHECKSUM_ALGORITHMS) -> str:
+    def get_object_checksum(self, bucket: str, key: str, algorithm: OBJECT_CHECKSUM_ALGORITHMS) -> str:
         response = self.__get_response(
             method="GET",
-            url=f"/objects/get-object-checksum/{algorithm.value}/{bucket_name}/{object_name}"
+            url=f"/objects/get-object-checksum/{algorithm.value}/{bucket}/{key}"
             )
         return response.json()
+
+    def get_object(self, bucket: str, key: str, file_path: str) -> json:
+        response = self.__get_response(
+            method="GET",
+            url=f"/objects/get-object-data/{bucket}/{key}"
+            )
+        with open(file_path, "wb") as file:
+            file.write(response.data)
+
+        return {
+            "message": "Object downloaded successfully",
+        }
