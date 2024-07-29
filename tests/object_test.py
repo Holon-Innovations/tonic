@@ -8,18 +8,18 @@ import hashlib
 from tonic import Tonic
 from tonic.classes import *
 from tonic.exceptions import *
-from tests.config import config
+from tests.config import Config
 from tonic.types import OBJECT_CHECKSUM_ALGORITHMS
 
 @pytest.fixture
 def tonic():
-    config_data = config.get()["testing"]
+    config_data = Config.get()["testing"]
     tonic = Tonic(endpoint=config_data["api_endpoint"], access_id=config_data["auth_token_id"], secret_key=config_data["auth_token_secret"])
     return tonic
 
 def test_put_object_file(tonic):
     # create bucket using a random name
-    bucket_name = "test-bucket-" + str(random.randint(1000, 9999))
+    bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     tonic.create_bucket(bucket_name)
     # put object
     res = tonic.put_object(
@@ -33,7 +33,7 @@ def test_put_object_file(tonic):
 
 def test_put_object_file_as_bin(tonic):
     # create bucket using a random name
-    bucket_name = "test-bucket-" + str(random.randint(1000, 9999))
+    bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     tonic.create_bucket(bucket_name)
     with open("tests/random_files/text1.txt", "rb") as file_data:
         # put object
@@ -48,7 +48,7 @@ def test_put_object_file_as_bin(tonic):
 
 def test_put_large_object_file(tonic):
     # create bucket using a random name
-    bucket_name = "test-bucket-" + str(random.randint(1000, 9999))
+    bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     tonic.create_bucket(bucket_name)
     # put object
     res = tonic.put_object(
@@ -60,7 +60,7 @@ def test_put_large_object_file(tonic):
 
 def test_put_object_file_already_exists(tonic):
     # create bucket using a random name
-    bucket_name = "test-bucket-" + str(random.randint(1000, 9999))
+    bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     tonic.create_bucket(bucket_name)
     # put object
     res = tonic.put_object(
@@ -105,7 +105,7 @@ def test_get_crc32c(tonic):
     local_crc32c = f"{crc32c_val & 0xFFFFFFFF:08x}"
 
     # create bucket using a random name
-    bucket_name = "test-bucket-" + str(random.randint(1000, 9999))
+    bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     tonic.create_bucket(bucket_name)
     # put object
     res = tonic.put_object(
@@ -132,7 +132,7 @@ def test_get_sha256(tonic):
     local_sha256 = sha256.hexdigest()
 
     # create bucket using a random name
-    bucket_name = "test-bucket-" + str(random.randint(1000, 9999))
+    bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     tonic.create_bucket(bucket_name)
     # put object
     res = tonic.put_object(
@@ -160,7 +160,7 @@ def test_get_object(tonic):
     print(f"\nlocal sha256 -> {local_sha256}")
 
     # create bucket using a random name
-    bucket_name = "test-bucket-" + str(random.randint(1000, 9999))
+    bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     tonic.create_bucket(bucket_name)
     # put object
     res = tonic.put_object(
@@ -189,8 +189,8 @@ def test_get_object(tonic):
     print(f"\ndownloaded sha256 -> {local2_sha256}")
     assert local_sha256 == local2_sha256
 
-    # delete all folders starting with "test-bucket-"
+    # delete all folders starting with "s3-bucket-"
     for folder in os.listdir("tests/random_files"):
-        if folder.startswith("test-bucket-"):
+        if folder.startswith("s3-bucket-"):
             # remove dir even if not empty
             os.system(f"rm -rf tests/random_files/{folder}")

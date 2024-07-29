@@ -61,8 +61,8 @@ class Tonic:
             body=body,
             json=json,
             assert_same_host=True,
-            #timeout=urllib3.Timeout(connect=10.0, read=10.0),
-            timeout=urllib3.Timeout(connect=999.0, read=999.0),
+            timeout=urllib3.Timeout(connect=10.0, read=10.0),
+            #timeout=urllib3.Timeout(connect=999.0, read=999.0),
             retries=urllib3.Retry(3)
         )
 
@@ -118,7 +118,7 @@ class Tonic:
             url=f"/objects/create-multipart-object/{bucket}/{key}",
             json={"part_count": part_count, "object_size": length, "content_type": content_type}
         )
-        upload_id = response.json()["upload_id"]
+        upload_id = response.json()["id"]
 
         # loop for each part
         while which_part < part_count:
@@ -183,7 +183,7 @@ class Tonic:
                     verify_sha256=verify_sha256
                 )
         elif file_data is not None:
-            # get file size
+            # get file data
             file_data.seek(0, os.SEEK_END)
             file_size = file_data.tell()
             file_data.seek(0)

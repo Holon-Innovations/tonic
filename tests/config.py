@@ -1,7 +1,7 @@
 import pytest
 import yaml
 
-class config:
+class Config:
     @classmethod
     def get(cls) -> dict:
         with open('tests/dev.yaml', 'r') as file:

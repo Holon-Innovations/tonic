@@ -1,5 +1,5 @@
 import pytest
-from tests.config import config
+from tests.config import Config
 from tonic.helpers import *
 from tonic.types import *
 
