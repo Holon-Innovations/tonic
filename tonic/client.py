@@ -40,12 +40,12 @@ class Tonic:
         # get client
         self._http_client = urllib3.PoolManager(headers=headers, cert_reqs='CERT_REQUIRED' if self._cert_check else 'CERT_NONE')
 
-    def __get_region(self):
+    def _get_region(self):
         pass
 
-    def __get_response(self, method: str, url: str, body: bytes | None = None, json: dict | None = None):
+    def _get_response(self, method: str, url: str, body: bytes | None = None, json: dict | None = None):
         # build url
-        region = self.__get_region()
+        region = self._get_region()
         if region is None:
             s3_url = f"{self._endpoint}/{API_ROOT}/{url}"
         else:
@@ -70,7 +70,7 @@ class Tonic:
         return response
 
     def create_bucket(self, bucket: str, acl: BUCKET_ACL = BUCKET_ACL.PRIVATE, bucket_locked: bool = False) -> json:
-        response = self.__get_response(
+        response = self._get_response(
             method="POST",
             url=f"buckets",
             json={"name": bucket, "acl": acl.value, "locked": bucket_locked}
@@ -78,20 +78,20 @@ class Tonic:
         return response.json()
 
     def list_buckets(self)-> list[Bucket]:
-        response = self.__get_response(
+        response = self._get_response(
             method="GET",
             url="buckets"
             )
         return response.json()
 
     def delete_bucket(self, bucket: str) -> json:
-        response = self.__get_response(
+        response = self._get_response(
             method="DELETE",
             url=f"/buckets/name/{bucket}"
             )
         return response.json()
 
-    def __put_object_multipart(self,
+    def _put_object_multipart(self,
         bucket: str,
         key: str,
         data: BinaryIO,
@@ -107,7 +107,7 @@ class Tonic:
         upload_id = None
 
         # create the multipart object
-        response = self.__get_response(
+        response = self._get_response(
             method="POST",
             url=f"/objects/stream/write/new/name/{bucket}",
             json={
@@ -130,7 +130,7 @@ class Tonic:
             uploaded += len(part_data)
 
             # upload the part
-            response = self.__get_response(
+            response = self._get_response(
                 method="PUT",
                 url=f"/objects/stream/write/part/{upload_id}/{which_part}/{upload_size}",
                 body=part_data
@@ -143,7 +143,7 @@ class Tonic:
 
         # verify the file state by returning the object sha256
         if verify_sha256:
-            cs_response = self.__get_response(
+            cs_response = self._get_response(
                 method="GET",
                 url=f"/objects/checksum/name/sha256/{bucket}/{key}"
                 )
@@ -184,7 +184,7 @@ class Tonic:
 
             # open the file and upload it
             with open(file_path, "rb") as file_data:
-                result = self.__put_object_multipart(
+                result = self._put_object_multipart(
                     bucket=bucket,
                     key=key,
                     data=file_data,
@@ -199,7 +199,7 @@ class Tonic:
             file_data.seek(0)
 
             # upload the file
-            result = self.__put_object_multipart(
+            result = self._put_object_multipart(
                 bucket=bucket,
                 key=key,
                 data=file_data,
@@ -213,21 +213,21 @@ class Tonic:
         return result
 
     def list_objects(self, bucket: str) -> list[Object]:
-        response = self.__get_response(
+        response = self._get_response(
             method="GET",
             url=f"/objects/bucket/name/{bucket}"
             )
         return response.json()
 
     def get_object_checksum(self, bucket: str, key: str, algorithm: OBJECT_CHECKSUM_ALGORITHMS) -> str:
-        response = self.__get_response(
+        response = self._get_response(
             method="GET",
             url=f"/objects/checksum/name/{algorithm.value}/{bucket}/{key}"
             )
         return response.json()
 
     def get_object(self, bucket: str, key: str, file_path: str) -> json:
-        response = self.__get_response(
+        response = self._get_response(
             method="GET",
             url=f"/objects/stream/read/name/{bucket}/{key}"
             )
