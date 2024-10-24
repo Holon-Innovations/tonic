@@ -11,7 +11,7 @@ from .helpers import *
 from .types import *
 from .exceptions import *
 
-API_ROOT = "/s3/v1"
+API_ROOT = "/api/v1"
 
 class Tonic:
     def __init__(self,
@@ -33,7 +33,7 @@ class Tonic:
         # define headers
         headers = {
             'accept': 'application/json',
-            'pop-app-key': '{"id": "' + self._access_id + '", "token": "' + self._secret_key + '"}',
+            'auth-token': '{"id": "' + self._access_id + '", "token": "' + self._secret_key + '"}',
             'Content-Type': 'application/json'
         }
 
@@ -67,33 +67,27 @@ class Tonic:
         )
 
         # check response
-        if response.status != 200:
-            raise PopBadResponse(response)
         return response
 
     def create_bucket(self, bucket: str, acl: BUCKET_ACL = BUCKET_ACL.PRIVATE, bucket_locked: bool = False) -> json:
         response = self.__get_response(
             method="POST",
-            url=f"/buckets/create-bucket/{bucket}",
-            json={"acl": acl.value, "locked": bucket_locked}
+            url=f"buckets",
+            json={"name": bucket, "acl": acl.value, "locked": bucket_locked}
             )
         return response.json()
 
     def list_buckets(self)-> list[Bucket]:
         response = self.__get_response(
             method="GET",
-            url="/buckets/list-buckets"
+            url="buckets"
             )
-        res = response.json()
-        result = []
-        for bucket in res["buckets"]:
-            result.append(Bucket(name=bucket["name"], creation_date=bucket["created"]))
-        return result
+        return response.json()
 
     def delete_bucket(self, bucket: str) -> json:
         response = self.__get_response(
             method="DELETE",
-            url=f"/buckets/delete-bucket/{bucket}"
+            url=f"/buckets/name/{bucket}"
             )
         return response.json()
 
@@ -115,10 +109,19 @@ class Tonic:
         # create the multipart object
         response = self.__get_response(
             method="POST",
-            url=f"/objects/create-multipart-object/{bucket}/{key}",
-            json={"part_count": part_count, "object_size": length, "content_type": content_type}
+            url=f"/objects/stream/write/new/name/{bucket}",
+            json={
+                "object_name": key,
+                "parts": part_count,
+                "size": length,
+                "content_type": content_type
+            }
         )
-        upload_id = response.json()["id"]
+        if response.status != 200:
+            return response.json()
+
+        # get the upload id
+        upload_id = response.json()["result"]["upload_id"]
 
         # loop for each part
         while which_part < part_count:
@@ -129,24 +132,31 @@ class Tonic:
             # upload the part
             response = self.__get_response(
                 method="PUT",
-                url=f"/objects/upload-object-part/{upload_id}/{which_part}/{upload_size}",
+                url=f"/objects/stream/write/part/{upload_id}/{which_part}/{upload_size}",
                 body=part_data
             )
+            if response.status != 200:
+                return response.json()
+
+            # increment the part
             which_part += 1
 
         # verify the file state by returning the object sha256
         if verify_sha256:
-            response = self.__get_response(
+            cs_response = self.__get_response(
                 method="GET",
-                url=f"/objects/get-object-checksum/sha256/{bucket}/{key}"
+                url=f"/objects/checksum/name/sha256/{bucket}/{key}"
                 )
-            sha256 = response.json()["checksum"]
+            if cs_response.status != 200:
+                return cs_response.json()
+
+            # get the sha256 and append it to the response
+            sha256 = cs_response.json()["result"]
         else:
             sha256 = None
-        return {
-            "message": "Object uploaded successfully",
-            "sha256": sha256
-        }
+        result = response.json()
+        result["result"]["sha256"] = sha256
+        return result
 
     def put_object(self,
         bucket: str,
@@ -205,29 +215,30 @@ class Tonic:
     def list_objects(self, bucket: str) -> list[Object]:
         response = self.__get_response(
             method="GET",
-            url=f"/objects/list-objects/{bucket}"
+            url=f"/objects/bucket/name/{bucket}"
             )
-        res = response.json()
-        result = []
-        for obj in res["objects"]:
-            result.append(Object(name=obj["name"], creation_date=obj["created"]))
-        return result
+        return response.json()
 
     def get_object_checksum(self, bucket: str, key: str, algorithm: OBJECT_CHECKSUM_ALGORITHMS) -> str:
         response = self.__get_response(
             method="GET",
-            url=f"/objects/get-object-checksum/{algorithm.value}/{bucket}/{key}"
+            url=f"/objects/checksum/name/{algorithm.value}/{bucket}/{key}"
             )
         return response.json()
 
     def get_object(self, bucket: str, key: str, file_path: str) -> json:
         response = self.__get_response(
             method="GET",
-            url=f"/objects/get-object-data/{bucket}/{key}"
+            url=f"/objects/stream/read/name/{bucket}/{key}"
             )
+
+        if response.status != 200:
+            return response.json()
+
+        # write the file
         with open(file_path, "wb") as file:
             file.write(response.data)
 
         return {
-            "message": "Object downloaded successfully",
+            "status_code": response.status,
         }

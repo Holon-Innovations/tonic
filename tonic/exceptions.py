@@ -1,6 +1,5 @@
 from urllib3 import BaseHTTPResponse
 
-
 class PopBadResponse(Exception):
     def __init__(self, response: BaseHTTPResponse) -> None:
         self._response = response

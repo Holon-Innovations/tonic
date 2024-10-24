@@ -1,4 +1,4 @@
 testing:
   api_endpoint: http://127.0.0.1:8000
-  access_token_id: "123456789"
-  access_token_secret: "123456789"
+  auth_token_id: "123456789"
+  auth_token_secret: "123456789"

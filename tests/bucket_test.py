@@ -16,40 +16,36 @@ def test_create_bucket(tonic):
     # create bucket using a random name
     bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     res = tonic.create_bucket(bucket_name)
-    assert res is not None
-    assert "created successfully" in res["message"]
-    # get list buckets (this returns a list of bucket objects)
-    buckets_list = tonic.list_buckets()
+    assert res["status_code"] == 200
+    # get list of buckets (this returns a list of bucket objects)
+    res = tonic.list_buckets()
+    assert res["status_code"] == 200
+    bucket_list = res["result"]
     # check if bucket exists
-    assert isinstance(buckets_list, list)
-    for bucket in buckets_list:
-        if bucket.name == bucket_name:
+    assert isinstance(bucket_list, list)
+    found = False
+    for bucket in bucket_list:
+        if bucket["name"] == bucket_name:
+            found = True
             break
-    else:
-        assert False
+    assert found
 
 def test_create_bucket_already_exists(tonic):
     # create bucket using a random name
     bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
-    try:
-        # create bucket
-        res = tonic.create_bucket(bucket_name)
-        assert res is not None
-        # create again
-        res = tonic.create_bucket(bucket_name)
-        # should not reach here
-        assert False
-    except PopBadResponse as e:
-        assert e.response.status == 409
+    # create bucket
+    res = tonic.create_bucket(bucket_name)
+    assert res["status_code"] == 200
+    # create again
+    res = tonic.create_bucket(bucket_name)
+    assert res["status_code"] == 409
 
 def test_list_buckets(tonic):
     # list buckets
-    buckets = tonic.list_buckets()
+    res = tonic.list_buckets()
+    assert res["status_code"] == 200
+    buckets = res["result"]
     assert isinstance(buckets, list)
-    print("\nResults ->")
-    for bucket in buckets:
-        print(bucket.name)
-    print("--------------------")
 
 def test_delete_bucket(tonic):
     # create bucket using a random name
@@ -59,24 +55,23 @@ def test_delete_bucket(tonic):
     # delete bucket
     res = tonic.delete_bucket(bucket_name)
     assert res is not None
-    assert "deleted successfully" in res["message"]
+    assert res["status_code"] == 200
     # get list buckets (this returns a list of bucket objects)
-    buckets_list = tonic.list_buckets()
+    res = tonic.list_buckets()
+    assert res["status_code"] == 200
+    buckets_list = res["result"]
     # check if bucket exists, it should not
     assert isinstance(buckets_list, list)
     for bucket in buckets_list:
-        if bucket.name == bucket_name:
+        if bucket["name"] == bucket_name:
             assert False
 
 def test_delete_bucket_doesnt_exist(tonic):
     # create bucket name
     bucket_name = "s3-bucket-" + str(random.randint(1000, 9999))
     # delete bucket
-    try:
-        res = tonic.delete_bucket(bucket_name)
-        assert False
-    except PopBadResponse as e:
-        assert e.response.status == 404
+    res = tonic.delete_bucket(bucket_name)
+    assert res["status_code"] == 404
 
 def test_delete_bucket_locked(tonic):
     # create bucket using a random name
@@ -84,17 +79,17 @@ def test_delete_bucket_locked(tonic):
     res = tonic.create_bucket(bucket=bucket_name, bucket_locked=True)
     assert res is not None
     # delete bucket
-    try:
-        res = tonic.delete_bucket(bucket_name)
-        assert False
-    except PopBadResponse as e:
-        assert e.response.status == 403
+    res = tonic.delete_bucket(bucket_name)
+    assert res["status_code"] == 403
     # get list buckets (this returns a list of bucket objects)
-    buckets_list = tonic.list_buckets()
+    res = tonic.list_buckets()
+    assert res["status_code"] == 200
+    bucket_list = res["result"]
     # check if bucket exists, it still should be there
-    assert isinstance(buckets_list, list)
-    for bucket in buckets_list:
-        if bucket.name == bucket_name:
+    assert isinstance(bucket_list, list)
+    found = False
+    for bucket in bucket_list:
+        if bucket["name"] == bucket_name:
+            found = True
             break
-    else:
-        assert False
+    assert found
