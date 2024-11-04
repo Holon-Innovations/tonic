@@ -14,6 +14,13 @@
 #### Example:
 `tonic = Tonic(endpoint="https://api.example.com", access_id="my_access_id", secret_key="my_secret_key")`
 
+### Response structure
+The returning structure from each method in the API
+- `status` The status of the call, either `success`, `error` or `warning`
+- `status_code` The HTML status code for the call
+- `result` The result of the call
+- `result2` For certain call, a second set of results can be returned
+- `message` Any additional message from the call (generally used for errors and warnings)
 ### Methods
 
 #### `create_bucket`
