@@ -43,7 +43,7 @@ class Tonic:
     def _get_region(self):
         pass
 
-    def _get_response(self, method: str, url: str, body: bytes | None = None, json: dict | None = None):
+    def _client_response(self, method: str, url: str, body: bytes | None = None, json: dict | None = None):
         # build url
         region = self._get_region()
         if region is None:
@@ -62,15 +62,17 @@ class Tonic:
             json=json,
             assert_same_host=True,
             timeout=urllib3.Timeout(connect=10.0, read=10.0),
-            #timeout=urllib3.Timeout(connect=999.0, read=999.0),
             retries=urllib3.Retry(3)
         )
 
         # check response
         return response
 
+    def client_response(self, method: str, url: str, body: bytes | None = None, json: dict | None = None):
+        return self._client_response(method=method, url=url, body=body, json=json).json()
+
     def create_bucket(self, bucket: str, acl: BUCKET_ACL = BUCKET_ACL.PRIVATE, bucket_locked: bool = False) -> json:
-        response = self._get_response(
+        response = self._client_response(
             method="POST",
             url=f"buckets",
             json={"name": bucket, "acl": acl.value, "locked": bucket_locked}
@@ -78,14 +80,14 @@ class Tonic:
         return response.json()
 
     def list_buckets(self)-> list[Bucket]:
-        response = self._get_response(
+        response = self._client_response(
             method="GET",
             url="buckets"
             )
         return response.json()
 
     def delete_bucket(self, bucket: str) -> json:
-        response = self._get_response(
+        response = self._client_response(
             method="DELETE",
             url=f"/buckets/name/{bucket}"
             )
@@ -107,7 +109,7 @@ class Tonic:
         upload_id = None
 
         # create the multipart object
-        response = self._get_response(
+        response = self._client_response(
             method="POST",
             url=f"/objects/stream/write/new/name/{bucket}",
             json={
@@ -130,7 +132,7 @@ class Tonic:
             uploaded += len(part_data)
 
             # upload the part
-            response = self._get_response(
+            response = self._client_response(
                 method="PUT",
                 url=f"/objects/stream/write/part/{upload_id}/{which_part}/{upload_size}",
                 body=part_data
@@ -143,7 +145,7 @@ class Tonic:
 
         # verify the file state by returning the object sha256
         if verify_sha256:
-            cs_response = self._get_response(
+            cs_response = self._client_response(
                 method="GET",
                 url=f"/objects/checksum/name/sha256/{bucket}/{key}"
                 )
@@ -213,21 +215,21 @@ class Tonic:
         return result
 
     def list_objects(self, bucket: str) -> list[Object]:
-        response = self._get_response(
+        response = self._client_response(
             method="GET",
             url=f"/objects/bucket/name/{bucket}"
             )
         return response.json()
 
     def get_object_checksum(self, bucket: str, key: str, algorithm: OBJECT_CHECKSUM_ALGORITHMS) -> str:
-        response = self._get_response(
+        response = self._client_response(
             method="GET",
             url=f"/objects/checksum/name/{algorithm.value}/{bucket}/{key}"
             )
         return response.json()
 
     def get_object(self, bucket: str, key: str, file_path: str) -> json:
-        response = self._get_response(
+        response = self._client_response(
             method="GET",
             url=f"/objects/stream/read/name/{bucket}/{key}"
             )

@@ -23,6 +23,23 @@ The returning structure from each method in the API
 - `message` Any additional message from the call (generally used for errors and warnings)
 ### Methods
 
+#### `client_response`
+`def client_response(self, method: str, url: str, body: bytes | None = None, json: dict | None = None)`
+
+Get a response from the server. This can be used to define your own methods.
+
+##### Parameters:
+- `method` (str): GET, POST, PUT or DELETE
+- `url` (str): The url to call, this excludes the endpoint.
+- `body` (bytes, optional): The bytes to be passed.
+- `json` (bool, optional): The json to be passed.
+
+##### Returns:
+- `json`: Response from the server.
+
+##### Example:
+`response = tonic.client_response("GET", "/status?node_only=true")`
+
 #### `create_bucket`
 `def create_bucket(self, bucket: str, acl: BUCKET_ACL = BUCKET_ACL.PRIVATE, bucket_locked: bool = False) -> json:`
 
@@ -127,3 +144,4 @@ Downloads an object to a specified file path.
 
 ##### Example:
 `response = tonic.get_object(bucket="my_bucket", key="my_object", file_path="path/to/save")`
+
