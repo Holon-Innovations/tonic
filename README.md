@@ -18,8 +18,8 @@
 The returning structure from each method in the API
 - `status` The status of the call, either `success`, `error` or `warning`
 - `status_code` The HTML status code for the call
-- `result` The result of the call
-- `result2` For certain call, a second set of results can be returned
+- `result` The resulting data set for the call
+- `result2` For certain calls, a second set of result data set can be returned
 - `message` Any additional message from the call (generally used for errors and warnings)
 ### Methods
 
