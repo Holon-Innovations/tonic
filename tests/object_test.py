@@ -1,7 +1,6 @@
 import pytest
 import os
 import random
-import zlib
 import crc32c
 import hashlib
 

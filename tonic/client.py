@@ -1,8 +1,5 @@
-from email import message
 import os
 import json
-import re
-from unittest import result
 import urllib3
 from typing import BinaryIO
 
